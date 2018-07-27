@@ -38,7 +38,7 @@ class Vision:
         rospy.init_node("vision_node_server")
         
         # Initialize the vision class Jenga4D
-        predictor = Jenga4Dpos()
+        self.predictor = Jenga4Dpos()
         
         # vision service
         self.visSrv = rospy.Service('vision', std_srvs.srv.Empty, self.handle_vision_service)
@@ -63,6 +63,8 @@ class Vision:
         #~ cv2.waitKey(0)
         #~ cv2.destroyAllWindows()
         
+        #~ pose = self.predictor.predict_4dpos(image_np)
+        #~ print(pose)
         return image_np
     
     def handle_vision_service(self, args):
