@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="vision_service"  pkg="vision-rs" type="ros_pred_vis.sh"/>
+</launch>
