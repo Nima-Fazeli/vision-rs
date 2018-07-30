@@ -12,6 +12,29 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   std_srvs
+  image_geometry
+  image_transport
+  cv_bridge
+  tf
+  image_view
+)
+
+if(NOT ANDROID)
+  find_package(PythonLibs)
+  if(PYTHONLIBS_VERSION_STRING VERSION_LESS 3)
+    find_package(Boost REQUIRED python)
+  else()
+    find_package(Boost REQUIRED python3)
+  endif()
+else()
+find_package(Boost REQUIRED)
+endif()
+find_package(OpenCV 3 REQUIRED
+  COMPONENTS
+    opencv_core
+    opencv_imgproc
+    opencv_imgcodecs
+  CONFIG
 )
 
 ## System dependencies are found with CMake's conventions
@@ -104,10 +127,10 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES vision-rs
-#  CATKIN_DEPENDS roscpp rospy std_msgs std_srvs
-#  DEPENDS system_lib
+    INCLUDE_DIRS launch
+    LIBRARIES vision-rs
+    CATKIN_DEPENDS roscpp rospy std_msgs std_srvs
+    DEPENDS OpenCV image_transport
 )
 
 ###########
@@ -134,7 +157,8 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/vision-rs_node.cpp)
+add_executable(block_vis_node src/block_vis_node.cpp)
+add_executable(block_vis_test src/block_vis_node_test.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -147,9 +171,19 @@ include_directories(
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(block_vis_node
+    ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+    ${image_transport_LIBRARIES}
+    ${cv_bridge_INCLUDE_DIRS}
+)
+
+target_link_libraries(block_vis_test
+    ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+    ${image_transport_LIBRARIES}
+    ${cv_bridge_INCLUDE_DIRS}
+)
 
 #############
 ## Install ##

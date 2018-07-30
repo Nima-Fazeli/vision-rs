@@ -21,7 +21,7 @@ class FrameDrawer
     public:
         FrameDrawer(const std::vector<std::string>& frame_ids) : it_(nh_), frame_ids_(frame_ids)
         {
-            std::string image_topic = nh_.resolveName("image");
+            std::string image_topic = nh_.resolveName("/camera/color/image_raw");
             sub_ = it_.subscribeCamera(image_topic, 1, &FrameDrawer::imageCb, this);
             pub_ = it_.advertise("image_out", 1);
             cvInitFont(&font_, CV_FONT_HERSHEY_SIMPLEX, 0.5, 0.5);
@@ -33,14 +33,15 @@ class FrameDrawer
             cv::Mat image;
             cv_bridge::CvImagePtr input_bridge;
             try {
-                input_bridge = cv_bridge::toCvCopy(image_msg, sensor_msgs::image_encodings::BGR8);
+                input_bridge = cv_bridge::toCvCopy(image_msg, sensor_msgs::image_encodings::RGB8);
                 image = input_bridge->image;
+                std::cout << "Got message" << std::endl;
             }
             catch (cv_bridge::Exception& ex){
                 ROS_ERROR("[draw_frames] Failed to convert image");
                 return;
             }
-
+            /*
             cam_model_.fromCameraInfo(info_msg);
 
             BOOST_FOREACH(const std::string& frame_id, frame_ids_)
@@ -63,7 +64,7 @@ class FrameDrawer
                 cv::Point3d pt_cv(pt.x(), pt.y(), pt.z());
                 cv::Point2d uv;
                 uv = cam_model_.project3dToPixel(pt_cv);
-
+                
                 static const int RADIUS = 3;
                 cv::circle(image, uv, RADIUS, CV_RGB(255,0,0), -1);
                 CvSize text_size;
@@ -71,9 +72,9 @@ class FrameDrawer
                 cvGetTextSize(frame_id.c_str(), &font_, &text_size, &baseline);
                 CvPoint origin = cvPoint(uv.x - text_size.width / 2,
                                          uv.y - RADIUS - baseline - 3);
-                cv:putText(image, frame_id.c_str(), origin, cv::FONT_HERSHEY_SIMPLEX, 12, CV_RGB(255,0,0));
+                cv::putText(image, frame_id.c_str(), origin, cv::FONT_HERSHEY_SIMPLEX, 12, CV_RGB(255,0,0));
             }
-
+            */
             pub_.publish(input_bridge->toImageMsg());
         }
 };
@@ -82,6 +83,10 @@ int main(int argc, char** argv)
 {
     ros::init(argc, argv, "draw_frames");
     std::vector<std::string> frame_ids(argv + 1, argv + argc);
+    if (CV_MAJOR_VERSION == 3)
+    {
+        std::cout << "[draw_frames] You're using opencv3" << std::endl;
+    }
     FrameDrawer drawer(frame_ids);
     ros::spin();
 }
