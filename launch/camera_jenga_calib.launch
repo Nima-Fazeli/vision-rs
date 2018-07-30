@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="calib_cam_jenga"  pkg="vision-rs" type="camera_jenga_calib.py" output="screen"/>
+    <node name="calib_marker" pkg="rviz" type="rviz" args="-d $(find vision-rs)/launch/calib_rviz.rviz"/>
+</launch>
