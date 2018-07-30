@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="jenga_frame"  pkg="tf" type="static_transform_publisher" args="1 0 0 0 0 0 1 /camera_link /jenga_tf 100"/>
+    <!--
+    <node name="draw_frame"  pkg="vision-rs" type="block_vis_node.py" args="/jenga_tf" output="screen"/>
+    -->
+</launch>
