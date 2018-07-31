@@ -157,8 +157,6 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(block_vis_node src/block_vis_node.cpp)
-add_executable(block_vis_test src/block_vis_node_test.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -171,19 +169,7 @@ add_executable(block_vis_test src/block_vis_node_test.cpp)
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(block_vis_node
-    ${catkin_LIBRARIES}
-    ${OpenCV_LIBRARIES}
-    ${image_transport_LIBRARIES}
-    ${cv_bridge_INCLUDE_DIRS}
-)
 
-target_link_libraries(block_vis_test
-    ${catkin_LIBRARIES}
-    ${OpenCV_LIBRARIES}
-    ${image_transport_LIBRARIES}
-    ${cv_bridge_INCLUDE_DIRS}
-)
 
 #############
 ## Install ##

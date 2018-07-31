@@ -1,4 +1,8 @@
 <?xml version="1.0"?>
 <launch>
-    <node name="jenga_frame"  pkg="tf" type="static_transform_publisher" args="0.643328785896 0.0523329377174 -0.102300219238 -0.128255948424 -0.0298073198646 0.938377797604 0.319546848536 /camera_link /jenga_tf 100"/>
+    <!-- inverse transform: rosrun tf tf_echo /jenga_tf /camera_link -->
+<!--
+    <node name="jenga_frame"  pkg="tf" type="static_transform_publisher" args="0.643328785896 0.0523329377174 -0.102300219238 -0.128255948424 -0.0298073198646 0.938377797604 0.319546848536 /camera_link /jenga_tf 100"/> 
+-->
+    <node name="jenga_frame"  pkg="tf" type="static_transform_publisher" args="0.436 0.408 0.264 -0.128255948424 -0.0298073198646 0.938377797604 -0.319546848536 /jenga_tf /camera_link 100"/>
 </launch>
