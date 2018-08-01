@@ -30,6 +30,8 @@ import roslib, rospy
 # Ros Messages
 from sensor_msgs.msg import CompressedImage
 import std_srvs.srv
+from std_msgs.msg import Header
+from vision-rs.msg import BlocksPose
 
 
 class Vision:
@@ -42,6 +44,18 @@ class Vision:
         
         # vision service
         self.visSrv = rospy.Service('vision', std_srvs.srv.Empty, self.handle_vision_service)
+
+
+    def pack_blocks(self, blocks_list):
+
+        # Initialize
+        bp = BlocksPose()
+        bp.header = Header()
+        bp.header.stamp = rospy.Time.now()
+        bp.header.frame_id = '/jenga_tower'
+        poses = []
+        for block in blocks_list:
+
     
     def get_image(self):
         # get image from camera and convert to cv format
@@ -69,13 +83,15 @@ class Vision:
     
     def handle_vision_service(self, args):
         # service handle for the vision
-        
+
+        blocks_pose_list = []
         cv_image = self.get_image()
         
         # pass cv_image to Jenga4D Predictor
-        
+        blocks_pose_list = self.predictor.predict_4dpos(cv_image)
+
         # write the output to a file
-        return []
+        return blocks_pose_list
 
 
 if __name__ == "__main__":
