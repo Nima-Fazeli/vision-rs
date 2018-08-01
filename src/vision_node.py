@@ -30,8 +30,9 @@ import roslib, rospy
 # Ros Messages
 from sensor_msgs.msg import CompressedImage
 import std_srvs.srv
-from std_msgs.msg import Header
+from std_msgs.msg import Header, Pose
 from vision-rs.msg import BlocksPose
+from vision-rs.srv import BlocksPoseService
 
 
 class Vision:
@@ -43,11 +44,10 @@ class Vision:
         self.predictor = Jenga4Dpos()
         
         # vision service
-        self.visSrv = rospy.Service('vision', std_srvs.srv.Empty, self.handle_vision_service)
+        self.visSrv = rospy.Service('vision', BlocksPoseService, self.handle_vision_service)
 
 
     def pack_blocks(self, blocks_list):
-
         # Initialize
         bp = BlocksPose()
         bp.header = Header()
@@ -55,6 +55,19 @@ class Vision:
         bp.header.frame_id = '/jenga_tower'
         poses = []
         for block in blocks_list:
+            pose = Pose()
+            # TODO: fill the data with the one form blocks_list
+            pose.position.x = None
+            pose.position.x = None
+            pose.position.x = None
+            pose.orientation.x = None
+            pose.orientation.y = None
+            pose.orientation.z = None
+            pose.orientation.w = None
+            poses.append(pose)
+        bp.blocks = poses
+
+        return bp
 
     
     def get_image(self):
@@ -91,7 +104,12 @@ class Vision:
         blocks_pose_list = self.predictor.predict_4dpos(cv_image)
 
         # write the output to a file
-        return blocks_pose_list
+
+        # Pack the values observed into a BlocksPose msg
+        bp = self.pack_blocks(blocks_pose_list)
+
+        # Return the service result
+        return BlocksPoseServiceResponse(bp)
 
 
 if __name__ == "__main__":
