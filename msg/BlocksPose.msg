@@ -1,2 +1,2 @@
 Header header
-Block[] blocks
+geometry_msgs/Pose[] blocks
