@@ -59,6 +59,7 @@ class Vision:
         self.tower_subscriber = rospy.Subscriber('tower_state', Tower, self.updateTowerState)
 
         self.transformer = tf.Transformer(True)
+        self.tf_broadcaster = tf.TransformBroadcaster()
 
     def pack_blocks(self, blocks_list):
         # Initialize
@@ -66,19 +67,30 @@ class Vision:
         bp.header = Header()
         bp.header.stamp = rospy.Time.now()
         bp.header.frame_id = '/jenga_tower'
-        poses = []
+        blocks = []
         for block in blocks_list:
-            pose = Pose()
             # TODO: fill the data with the one form blocks_list
-            pose.position.x = None
-            pose.position.x = None
-            pose.position.x = None
-            pose.orientation.x = None
-            pose.orientation.y = None
-            pose.orientation.z = None
-            pose.orientation.w = None
-            poses.append(pose)
-        bp.blocks = poses
+            bb = {'x':None, 'y':None, 'z':None, 'qw':None, 'qx':None, 'qy':None, 'qz':None, 'exists':True}
+            layer, row = self.get_the_closest_block(bb)
+            # Broadcast the block
+            self.broadcast_block(layer,row,bb)
+
+            # Pack the values
+            block_msg = Block()
+            block_msg.header.stamp = rospy.Time.now()
+            block_msg.header.frame_id = '/jenga_tower'
+            block_msg.layer = layer
+            block_msg.row = row
+            block_msg.exists = bb['exisits']
+            block_msg.pose.position.x = bb['x']
+            block_msg.pose.position.y = bb['y']
+            block_msg.pose.position.z = bb['z']
+            block_msg.pose.orientation.x = bb['qx']
+            block_msg.pose.orientation.y = bb['qy']
+            block_msg.pose.orientation.z = bb['qz']
+            block_msg.pose.orientation.w = bb['qw']
+            
+        bp.blocks = blocks
 
         return bp
 
@@ -137,14 +149,6 @@ class Vision:
         self.tower_state_world = updated_tower_world
         self.tower_state_tower = updated_tower_tower
 
-    def compare_blocks(self, block_a, block_b):
-        '''
-        Return some kind of metric about the similarity of the blocks
-        :param block_a:
-        :param block_b:
-        :return:
-        '''
-
     def get_the_closest_block(self, block):
         """
         Return the layer and row of the closes block in the tower_state
@@ -190,6 +194,15 @@ class Vision:
             result_row = np.argmin(np.abs(np.array(horizontal_vals) - block[key]))
 
         return (result_layer, result_row)
+    
+    
+    
+    def broadcast_block(self, layer, row, block_info):
+        self.tf_broadcaster([block_info['x'],block_info['y'],block_info['z']], [block_info['qx'],block_info['qy'],block_info['qz'],block_info['qw']], rospy.Time.now(), 'block_%d_%d'%(layer, row), 'jenga_tf')
+    
+    
+    
+    
 
     
     def get_image(self):
