@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(vision-rs)
+project(vision_rs)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   image_view
   message_generation
+  geometry_msgs
 )
 
 if(NOT ANDROID)
@@ -75,14 +76,14 @@ find_package(OpenCV 3 REQUIRED
 add_message_files(
   FILES
   BlocksPose.msg
-  
+  Block.msg
+  BlockBelief.msg
 )
 
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
   BlockPoseService.srv
-
 )
 
 ## Generate actions in the 'action' folder
@@ -96,6 +97,7 @@ add_service_files(
 generate_messages(
   DEPENDENCIES
   std_msgs
+  geometry_msgs
 )
 
 ################################################
@@ -129,8 +131,8 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
     INCLUDE_DIRS launch
-    LIBRARIES vision-rs
-    CATKIN_DEPENDS roscpp rospy std_msgs std_srvs message_generation
+    LIBRARIES vision_rs
+    CATKIN_DEPENDS roscpp rospy std_msgs std_srvs message_runtime geometry_msgs
     DEPENDS OpenCV image_transport
 )
 
@@ -147,7 +149,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/vision-rs.cpp
+#   src/${PROJECT_NAME}/vision_rs.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -217,7 +219,7 @@ install(DIRECTORY launch/
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_vision-rs.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_vision_rs.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

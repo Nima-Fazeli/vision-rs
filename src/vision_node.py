@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """
 For Launch:
-# <node name="vision_node" pkg="vision-rs" type="vision_node.py" />
+# <node name="vision_node" pkg="vision_rs" type="vision_node.py" />
 
 catkin package:
-catkin_create_pkg vision-rs std_msgs std_srvs rospy roscpp
+catkin_create_pkg vision_rs std_msgs std_srvs rospy roscpp
 
 then run catkin_make
 """
@@ -33,8 +33,8 @@ from sensor_msgs.msg import CompressedImage
 import std_srvs.srv
 from std_msgs.msg import Header
 from geometry_msgs.msg import TransformStamped, Pose
-from vision-rs.msg import BlocksPose
-from vision-rs.srv import BlocksPoseService
+from vision_rs.msg import BlocksPose
+from vision_rs.srv import BlocksPoseService
 from mo_jenga_planning.msg import Block, BlockBelief, Layer, Tower
 
 
