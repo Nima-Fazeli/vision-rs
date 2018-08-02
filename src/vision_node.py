@@ -89,7 +89,7 @@ class Vision:
             block_msg.pose.orientation.y = bb['qy']
             block_msg.pose.orientation.z = bb['qz']
             block_msg.pose.orientation.w = bb['qw']
-            
+
         bp.blocks = blocks
 
         return bp
