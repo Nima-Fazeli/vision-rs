@@ -33,7 +33,7 @@ from sensor_msgs.msg import CompressedImage
 import std_srvs.srv
 from geometry_msgs.msg import TransformStamped, Pose
 from vision_rs.msg import BlocksPose
-from vision_rs.srv import BlocksPoseService
+from vision_rs.srv import BlockPoseService
 
 
 
@@ -49,8 +49,7 @@ class Vision:
         self.predictor = Jenga4Dpos()
 
         # vision service
-        self.visSrv = rospy.Service('vision', BlocksPoseService, self.handle_vision_service)
-
+        self.visSrv = rospy.Service('vision_rs/blocks_poses', BlockPoseService, self.handle_vision_service)
 
 
 
@@ -83,6 +82,7 @@ class Vision:
             try:
                 ros_data = rospy.wait_for_message(camera_message, CompressedImage)
                 print('message received')
+                rospy.loginfo('message received')
                 break
             except:
                 print('waiting for message')
@@ -102,7 +102,6 @@ class Vision:
     
     def handle_vision_service(self, args):
         # service handle for the vision
-
         blocks_pose_list = []
         cv_image = self.get_image()
         
@@ -110,9 +109,12 @@ class Vision:
         # TODO : Uncommment
         # blocks_pose_list = self.predictor.predict_4dpos(cv_image)
         # DEBUGG:
-        blocks_pose_list = [{'x': 0.0, 'y': 0.0, 'z':0.0143\2 , 'qw': 1.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0},
-                            {'x': 0.0, 'y': 0.0, 'z':0.0143*2.5 , 'qw': 1.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0},
-                            {'x': 0.026, 'y': 0.0, 'z': 0.0143*5.5, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707}]
+        blocks_pose_list = []
+        blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z':0.0, 'qw': 1.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0})
+        blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z':0.0143*2, 'qw': 1.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0})
+        #~ blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*5, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*5, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*7, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
 
         # write the output to a file
 
@@ -120,7 +122,7 @@ class Vision:
         bp = self.pack_blocks(blocks_pose_list)
 
         # Return the service result
-        return BlocksPoseServiceResponse(bp)
+        return bp
 
 
 if __name__ == "__main__":
