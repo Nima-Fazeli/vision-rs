@@ -52,7 +52,7 @@ class Vision:
         self.visSrv = rospy.Service('vision_rs/blocks_poses', BlockPoseService, self.handle_vision_service)
         
         # Memory for storing images
-        self.last_filecode = -1  # Last filecode recieved
+        self.filecode = -1  # Last filecode recieved
         self.image_count = 0    
 
 
@@ -84,7 +84,7 @@ class Vision:
         if color:
             camera_message = '/camera/color/image_raw/compressed'
         else:
-            camera_message = '/camera/depth/......'
+            camera_message = '/camera/aligned_depth_to_color/image_raw/compressed'#'/camera/depth/image_rect_raw/compressed'
         while True:
             try:
                 ros_data = rospy.wait_for_message(camera_message, CompressedImage)
@@ -95,9 +95,21 @@ class Vision:
                 print('waiting for message')
         
         #### direct conversion ####
-        np_arr = np.fromstring(ros_data.data, np.uint8)
-        image_np = cv2.imdecode(np_arr, cv2.IMREAD_COLOR) # OpenCV >= 3.0:
-                
+        if color:
+            np_arr = np.fromstring(ros_data.data, np.uint8)
+            print(np_arr.shape)
+            image_np = cv2.imdecode(np_arr, cv2.IMREAD_COLOR) # OpenCV >= 3.0:
+        
+        else:
+            encoding = ros_data.format
+            print('encoding: %s' % encoding)
+            
+            np_arr = np.fromstring(ros_data.data, np.uint8)
+            max_d = np.max(np_arr)
+            print(max_d)
+            np_arr_norm = np_arr/float(max_d)*255
+            print(np_arr.shape)
+            image_np = cv2.imdecode(np_arr_norm.astype(int), cv2.IMREAD_COLOR)
         #~ debug
         #~ cv2.imshow('image', image_np)
         #~ cv2.waitKey(0)
@@ -107,18 +119,22 @@ class Vision:
         #~ print(pose)
         return image_np
         
-    def save_image(img, depth=False):
-        if depth:
-            c = 'depth'
-        else:
-            c = 'color'
-            
-        filename = '%s_fc_%d_%d.png'%(c,self.filecode, self.image_count)
-        path = os.path.join(root,'mo_jenga', 'data', 'imgs', c, 'filecode_%d'%self.filecode,
-        if not os.path.exists(directory):
-            print ('Creating directory: %s'%directory)
-            os.makedirs(directory)
-        file_path = os.path.join(path, filename)        
+    def save_image(self,img, depth=False):
+        print('Saving image')
+        cd = {True:'depth',False:'color'}
+        c = cd[depth]
+        print('ok')
+        filename = '%s_fc_%d_%d.png'%(c, self.filecode, self.image_count)
+        print('ok')
+        path = os.path.join(root,'mo_jenga', 'data', 'imgs', c, 'filecode_%d'%self.filecode)
+        print('path creating')
+        print(path)
+        if not os.path.exists(path):
+            print ('Creating directory: %s'%path)
+            os.makedirs(path)
+        print('path created')
+        file_path = os.path.join(path, filename)
+        rospy.loginfo('ready to save')        
         cv2.imwrite(file_path, img)
             
         
@@ -128,6 +144,8 @@ class Vision:
         
         # work with filecode
         filecode = args.filecode
+        rospy.loginfo('Filecode received: %d'%filecode)
+        rospy.loginfo('Previous filecode: %d'%self.filecode)
         if filecode != self.filecode:
             self.filecode = filecode
             self.image_count = 0
@@ -137,11 +155,13 @@ class Vision:
         
         blocks_pose_list = []
         cv_image = self.get_image()
+        print('we have image')
         
         # pass cv_image to Jenga4D Predictor
         
         # Save the image to process later
-        self.save_image(cv_image)
+        self.save_image(cv_image) # Color
+        self.save_image(self.get_image(color=False),depth=True)
         
         # TODO : Uncommment
         # blocks_pose_list = self.predictor.predict_4dpos(cv_image)
