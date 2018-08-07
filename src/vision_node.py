@@ -29,7 +29,7 @@ import roslib, rospy
 
 
 # Ros Messages
-from sensor_msgs.msg import CompressedImage
+from sensor_msgs.msg import CompressedImage, Image 
 import std_srvs.srv
 from geometry_msgs.msg import TransformStamped, Pose
 from vision_rs.msg import BlocksPose
@@ -83,41 +83,65 @@ class Vision:
         # get image from camera and convert to cv format
         if color:
             camera_message = '/camera/color/image_raw/compressed'
-        else:
-            camera_message = '/camera/aligned_depth_to_color/image_raw/compressed'#'/camera/depth/image_rect_raw/compressed'
-        while True:
-            try:
-                ros_data = rospy.wait_for_message(camera_message, CompressedImage)
-                print('message received')
-                rospy.loginfo('message received')
-                break
-            except:
-                print('waiting for message')
-        
-        #### direct conversion ####
-        if color:
-            np_arr = np.fromstring(ros_data.data, np.uint8)
-            print(np_arr.shape)
-            image_np = cv2.imdecode(np_arr, cv2.IMREAD_COLOR) # OpenCV >= 3.0:
-        
-        else:
-            encoding = ros_data.format
-            print('encoding: %s' % encoding)
+            while True:
+                try:
+                    ros_data = rospy.wait_for_message(camera_message, CompressedImage)
+                    print('message received')
+                    rospy.loginfo('message received')
+                    break
+                except:
+                    print('waiting for message')
             
             np_arr = np.fromstring(ros_data.data, np.uint8)
-            max_d = np.max(np_arr)
-            print(max_d)
-            np_arr_norm = np_arr/float(max_d)*255
             print(np_arr.shape)
-            image_np = cv2.imdecode(np_arr_norm.astype(int), cv2.IMREAD_COLOR)
-        #~ debug
-        #~ cv2.imshow('image', image_np)
-        #~ cv2.waitKey(0)
-        #~ cv2.destroyAllWindows()
+            image_np = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        else:
+            camera_message = '/camera/aligned_depth_to_color/image_raw' #'/camera/depth/image_rect_raw/compressed'
+            print('going for depth')
+            while True:
+                try:
+                    ros_data = rospy.wait_for_message(camera_message, Image)
+                    print('message received')
+                    rospy.loginfo('message received')
+                    break
+                except:
+                    print('waiting for message')
+            
+            h = ros_data.height
+            w = ros_data.width
+            step = ros_data.step
+            print('size (h,w,s): (%d, %d, %d)' % (h,w, step))
+            encoding = ros_data.encoding
+            print('encoding: %s'%encoding)
+            
+            np_arr = np.fromstring(ros_data.data, np.uint8)
+            arrr = np.empty((h,w))
+            for i in range(h):
+                for j in range(w):
+                    arrr[i,j] = np_arr[i*w*2+j*2]+256*np_arr[i*w*2+j*2+1]
+                    
+            arrr_norm = arrr#*(2**16-1)/arrr.max()
+            print(np_arr.shape)
+            print(arrr.shape)
+            
+            image_np = arrr_norm.astype(int)#cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         
-        #~ pose = self.predictor.predict_4dpos(image_np)
-        #~ print(pose)
+
         return image_np
+        
+    def compress_to_cv2(self, cmprs_img_msg, desired_encoding = "passthrough"):
+        str_msg = cmprs_img_msg.data
+        buf = np.ndarray(shape=(1, len(str_msg)), dtype=np.uint8, buffer=cmprs_img_msg.data)
+        im = cv2.imdecode(buf, cv2.IMREAD_ANYCOLOR)
+        if desired_encoding == "passthrough":
+            return im
+        try:
+            res = cv2.cvtColor(im, "bgr8", desired_encoding)
+        except RuntimeError as e:
+            raise CvBridgeError(e)
+
+        return res
+        
         
     def save_image(self,img, depth=False):
         print('Saving image')
