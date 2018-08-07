@@ -16,11 +16,17 @@ import rospy
 from interactive_markers.interactive_marker_server import *
 from visualization_msgs.msg import *
 
+WIDTH  = 25./1000.*3
+HEIGHT = 14./1000.*20
+DEPTH  = 75./1000. 
+
+
 def framePublisher( msg ):
     p = msg.pose.position
     q = msg.pose.orientation
     s = 'Pose" ' + str(p.x) + ' '+ str(p.y) + ' '+ str(p.z) + ' '
     s = s + str(q.x) + ' ' + str(q.y) + ' ' + str(q.z) + ' ' + str(q.w)
+    
     print(s)
 
 if __name__=="__main__":
@@ -33,14 +39,14 @@ if __name__=="__main__":
     int_marker = InteractiveMarker()
     int_marker.header.frame_id = "camera_link"
     int_marker.name = "my_marker"
-    int_marker.description = "Simple 1-DOF Control"
+    int_marker.description = "7 layers of the block"
 
     # create a grey box marker
     box_marker = Marker()
     box_marker.type = Marker.CUBE
-    box_marker.scale.x = 75./1000.
-    box_marker.scale.y = 25./1000.
-    box_marker.scale.z = 14./1000.
+    box_marker.scale.x = WIDTH
+    box_marker.scale.y = DEPTH
+    box_marker.scale.z = HEIGHT
     box_marker.color.r = 0.0
     box_marker.color.g = 0.5
     box_marker.color.b = 0.5

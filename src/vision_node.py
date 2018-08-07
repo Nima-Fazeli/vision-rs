@@ -36,7 +36,7 @@ from vision_rs.msg import BlocksPose
 from vision_rs.srv import BlockPoseService
 
 
-
+root =  os.path.dirname(os.path.abspath(__file__)).split('/mo_jenga')[0]
 
 
 
@@ -50,6 +50,10 @@ class Vision:
 
         # vision service
         self.visSrv = rospy.Service('vision_rs/blocks_poses', BlockPoseService, self.handle_vision_service)
+        
+        # Memory for storing images
+        self.last_filecode = -1  # Last filecode recieved
+        self.image_count = 0    
 
 
 
@@ -75,9 +79,12 @@ class Vision:
         bp.blocks = poses
         return bp
     
-    def get_image(self):
+    def get_image(self, color=True):
         # get image from camera and convert to cv format
-        camera_message = '/camera/color/image_raw/compressed'
+        if color:
+            camera_message = '/camera/color/image_raw/compressed'
+        else:
+            camera_message = '/camera/depth/......'
         while True:
             try:
                 ros_data = rospy.wait_for_message(camera_message, CompressedImage)
@@ -99,23 +106,68 @@ class Vision:
         #~ pose = self.predictor.predict_4dpos(image_np)
         #~ print(pose)
         return image_np
+        
+    def save_image(img, depth=False):
+        if depth:
+            c = 'depth'
+        else:
+            c = 'color'
+            
+        filename = '%s_fc_%d_%d.png'%(c,self.filecode, self.image_count)
+        path = os.path.join(root,'mo_jenga', 'data', 'imgs', c, 'filecode_%d'%self.filecode,
+        if not os.path.exists(directory):
+            print ('Creating directory: %s'%directory)
+            os.makedirs(directory)
+        file_path = os.path.join(path, filename)        
+        cv2.imwrite(file_path, img)
+            
+        
     
     def handle_vision_service(self, args):
         # service handle for the vision
+        
+        # work with filecode
+        filecode = args.filecode
+        if filecode != self.filecode:
+            self.filecode = filecode
+            self.image_count = 0
+        else:
+            self.image_count += 1
+        
+        
         blocks_pose_list = []
         cv_image = self.get_image()
         
         # pass cv_image to Jenga4D Predictor
+        
+        # Save the image to process later
+        self.save_image(cv_image)
+        
         # TODO : Uncommment
         # blocks_pose_list = self.predictor.predict_4dpos(cv_image)
         # DEBUGG:
         blocks_pose_list = []
         blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z':0.0, 'qw': 1.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0})
         blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z':0.0143*2, 'qw': 1.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0})
-        #~ blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*5, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*1, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*1, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*1, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*3, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*3, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*3, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*5, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*5, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
         blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*5, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
         blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*7, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-
+        blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*7, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*7, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*9, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*9, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*9, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*11, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*11, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*11, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        
         # write the output to a file
 
         # Pack the values observed into a BlocksPose msg

@@ -24,7 +24,8 @@ class DrawMarker:
         
     def make_marker(self):
         int_marker = InteractiveMarker()
-        int_marker.header.frame_id = "camera_link"
+        #~ int_marker.header.frame_id = "camera_link"
+        int_marker.header.frame_id = "jenga_tf"
         int_marker.name = "jenga"
         int_marker.description = "Simple jenga block"
         int_marker.pose.position.x = 0.3
