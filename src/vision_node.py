@@ -27,7 +27,6 @@ import cv2
 # Ros libraries
 import roslib, rospy
 
-
 # Ros Messages
 from sensor_msgs.msg import CompressedImage, Image 
 import std_srvs.srv
@@ -44,10 +43,10 @@ class Vision:
     def __init__(self):
         # Initialize the ros node
         rospy.init_node("vision_node_server")
-        
+        rospy.loginfo("[VISION] - Loading model ...")
         # Initialize the vision class Jenga4D
         self.predictor = Jenga4Dpos()
-
+        rospy.loginfo("[VISION] - Finished loading ...")
         # vision service
         self.visSrv = rospy.Service('vision_rs/blocks_poses', BlockPoseService, self.handle_vision_service)
         
@@ -97,36 +96,64 @@ class Vision:
             image_np = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         else:
             camera_message = '/camera/aligned_depth_to_color/image_raw' #'/camera/depth/image_rect_raw/compressed'
+            
+            #~ camera_message = '/camera/aligned_depth_to_color/image_raw/compressed' #'/camera/depth/image_rect_raw/compressed'
             print('going for depth')
             while True:
                 try:
                     ros_data = rospy.wait_for_message(camera_message, Image)
+                    #~ ros_data = rospy.wait_for_message(camera_message, CompressedImage)
                     print('message received')
                     rospy.loginfo('message received')
                     break
                 except:
                     print('waiting for message')
+            #~ mg = self.compress_to_cv2(ros_data, '16UC1')
+            #~ return mg
+            if True:    
+                h = ros_data.height
+                w = ros_data.width
+                step = ros_data.step
+                print('size (h,w,s): (%d, %d, %d)' % (h,w, step))
+                encoding = ros_data.encoding
+                print('encoding: %s'%encoding)
+                
+                np_arr = ros_data.data#np.fromstring(ros_data.data, np.uint8)
+                arrr = np.full((h,w), 0.0)
+                top_crop = 80
+                for i in range(top_crop,h):
+                    for j in range(120,w):
+                        val = (np_arr[i*w*2+j*2]+256.0*np_arr[i*w*2+j*2+1])#/(2**8-1)
+                        if val > 2**8*5:
+                            val = 2**8*5
+                            #~ val = 0
+                        arrr[i,j] = val
+                        #~ arrr[i,j] = (np_arr[i*w*2+j*2]+256.0*np_arr[i*w*2+j*2+1])#/(2**8-1)
+                        #~ arrr[i,j] = (np_arr[i*w*2+j]+256*np_arr[i*w*2+j])#/(2**8-1)
+                #~ pdb.set_trace()
+                print('max: %.4f'%arrr.max())
+                print('max: %.4f'%np.amax(arrr))
+                
+                cv2.normalize(arrr,arrr, 0, 1, cv2.NORM_MINMAX)
+                
+                arrr_norm = 255*arrr #*(2**8-1)/arrr.max()#(2**16-1.0)
+                
+                #print(np_arr.shape)
+                print(arrr.shape)
+                
+                image_np = arrr_norm#.astype(np.int8)#cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+                print(image_np)
             
-            h = ros_data.height
-            w = ros_data.width
-            step = ros_data.step
-            print('size (h,w,s): (%d, %d, %d)' % (h,w, step))
-            encoding = ros_data.encoding
-            print('encoding: %s'%encoding)
-            
-            np_arr = np.fromstring(ros_data.data, np.uint8)
-            arrr = np.empty((h,w))
-            for i in range(h):
-                for j in range(w):
-                    arrr[i,j] = np_arr[i*w*2+j*2]+256*np_arr[i*w*2+j*2+1]
-                    
-            arrr_norm = arrr#*(2**16-1)/arrr.max()
-            print(np_arr.shape)
-            print(arrr.shape)
-            
-            image_np = arrr_norm.astype(int)#cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            else:
+                dtype = np.dtype(np.int16)
+                dtype = dtype.newbyteorder('>' if ros_data.is_bigendian else '<')
+                shape = (ros_data.height, ros_data.width, 1)
+                data = np.fromstring(ros_data.data, dtype = dtype).reshape(shape)
+                cv2.normalize(data, data, 0, 1, cv2.NORM_MINMAX)
+                data.strides = (ros_data.step, dtype.itemsize*1, dtype.itemsize)
+                image_np = data[...,0]*255
+                
         
-
         return image_np
         
     def compress_to_cv2(self, cmprs_img_msg, desired_encoding = "passthrough"):
@@ -188,32 +215,44 @@ class Vision:
         self.save_image(self.get_image(color=False),depth=True)
         
         # TODO : Uncommment
-        # blocks_pose_list = self.predictor.predict_4dpos(cv_image)
-        # DEBUGG:
+        bnp = self.predictor.predict_4dpos(cv_image)
+        print('done')
         blocks_pose_list = []
-        blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z':0.0, 'qw': 1.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0})
-        blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z':0.0143*2, 'qw': 1.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0})
-        blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*1, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-        blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*1, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-        blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*1, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-        blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*3, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-        blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*3, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-        blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*3, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-        blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*5, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-        blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*5, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-        blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*5, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-        blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*7, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-        blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*7, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-        blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*7, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-        blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*9, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-        blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*9, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-        blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*9, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-        blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*11, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-        blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*11, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-        blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*11, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
         
+        if False: # DEBUGG:
+            blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z':0.0, 'qw': 1.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0})
+            blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z':0.0143*2, 'qw': 1.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0})
+            blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*1, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+            blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*1, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+            blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*1, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+            blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*3, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+            blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*3, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+            blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*3, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+            blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*5, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+            blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*5, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+            blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*5, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+            blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*7, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+            blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*7, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+            blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*7, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+            blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*9, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+            blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*9, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+            blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*9, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+            blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*11, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+            blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*11, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+            blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*11, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+        else:
+            zaxis = (0, 0, 1)
+            for ind in range(bnp.shape[0]):
+                theta = bnp[ind,3]+np.pi/2.
+                q = [np.cos(theta/2.), 0., 0., 1.0*np.sin(theta/2.)]
+                pose_dict = {'x': bnp[ind, 0]/100.,  'y': bnp[ind, 1]/100., 'z':bnp[ind, 2]/100., 'qw': q[0], 'qx': q[1], 'qy': q[2], 'qz': q[3]}
+                blocks_pose_list.append(pose_dict)
+                
         # write the output to a file
-
+        str_test =  "[VISION] -  ... {}".format(blocks_pose_list[0]['z'])
+        rospy.loginfo(str_test)
+        os.system('echo {} > test.txt'.format(str_test))
+        
         # Pack the values observed into a BlocksPose msg
         bp = self.pack_blocks(blocks_pose_list)
 
