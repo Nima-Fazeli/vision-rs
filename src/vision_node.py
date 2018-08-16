@@ -144,6 +144,9 @@ class Vision:
         
         # work with filecode
         filecode = args.filecode
+        layer = args.layer
+        row = args.row
+
         rospy.loginfo('Filecode received: %d'%filecode)
         rospy.loginfo('Previous filecode: %d'%self.filecode)
         if filecode != self.filecode:
@@ -161,7 +164,7 @@ class Vision:
         
         # Save the image to process later
         self.save_image(cv_image) # Color
-        self.save_image(self.get_image(color=False),depth=True)
+        self.save_image(self.get_image(color=False), depth=True)
         
         # TODO : Uncommment
         # blocks_pose_list = self.predictor.predict_4dpos(cv_image)

@@ -1,3 +1,5 @@
 int32 filecode
+int8 layer
+int8 row
 ---
 BlocksPose bp
