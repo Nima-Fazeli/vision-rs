@@ -28,10 +28,13 @@ class DrawMarker:
         int_marker.header.frame_id = "jenga_tf"
         int_marker.name = "jenga"
         int_marker.description = "Simple jenga block"
-        int_marker.pose.position.x = 0.3
-        int_marker.pose.position.y = 0.0
-        int_marker.pose.position.z = 0.0
-        int_marker.pose.orientation.x = 5
+        int_marker.pose.position.x = 0.0276
+        int_marker.pose.position.y = 0.0012
+        int_marker.pose.position.z = 0.07
+        int_marker.pose.orientation.x = 0.
+        int_marker.pose.orientation.y = 0.
+        int_marker.pose.orientation.z = 0.7071
+        int_marker.pose.orientation.w = 0.7071
         
         return int_marker
     
