@@ -47,7 +47,7 @@ class Vision:
         rospy.init_node("vision_node_server")
         rospy.loginfo("[VISION] - Loading model ...")
         # Initialize the vision class Jenga4D
-        self.predictor = None#Jenga4Dpos()
+        self.predictor = Jenga4Dpos()
         rospy.loginfo("[VISION] - Finished loading ...")
         # vision service
         self.visSrv = rospy.Service('vision_rs/blocks_poses', BlockPoseService, self.handle_vision_service)
@@ -236,7 +236,7 @@ class Vision:
         imaged.save(file_path)
 
 
-
+    # SERVICE CALLBACK:****************************************************************************************
     def handle_vision_service(self, args):
         # service handle for the vision
 
@@ -255,8 +255,6 @@ class Vision:
         cv_image = self.get_image()
         print('we have image')
 
-        # pass cv_image to Jenga4D Predictor
-
         # Save the image to process later
         self.save_image(cv_image) # Color
         image_np = self.get_image(color=False)
@@ -264,12 +262,14 @@ class Vision:
         self.save_image(image_np,depth=True)
         self.save_dimg_raw(araw)
 
+        # pass cv_image to Jenga4D Predictor
         # TODO : Uncommment
-        #bnp = self.predictor.predict_4dpos(cv_image,'filecode_%d'%self.filecode)
+        bnp = self.predictor.predict_4dpos(cv_image,'filecode_%d'%self.filecode)
         print('done')
-        blocks_pose_list = []
 
-        if True: # DEBUGG:
+        # Fill the block_pose_list
+        blocks_pose_list = []
+        if False: # DEBUGG:
             # odd layers:
             for i in range(17):
                 if i%2 != 0:
@@ -305,6 +305,10 @@ class Vision:
             zaxis = (0, 0, 1)
             for ind in range(bnp.shape[0]):
                 theta = bnp[ind,3]+np.pi/2.
+                # the following 3 lines are for geting the orientation as jenga_tf
+                epsilon = np.pi/8
+                if np.pi-epsilon < theta < np.pi+epsilon:
+                    theta -= np.pi
                 q = [np.cos(theta/2.), 0., 0., 1.0*np.sin(theta/2.)]
                 pose_dict = {'x': bnp[ind, 0]/100.,  'y': bnp[ind, 1]/100., 'z':bnp[ind, 2]/100., 'qw': q[0], 'qx': q[1], 'qy': q[2], 'qz': q[3]}
                 blocks_pose_list.append(pose_dict)
