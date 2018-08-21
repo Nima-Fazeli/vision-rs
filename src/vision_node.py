@@ -64,7 +64,7 @@ class Vision:
         bp.header.stamp = rospy.Time.now()
         bp.header.frame_id = '/jenga_tower'
         poses = []
-        for block in blocks_list:
+        for i, block in enumerate(blocks_list):
             # TODO: fill the data with the one form blocks_list
             # Pack the values
             pose = Pose()
@@ -268,7 +268,7 @@ class Vision:
         # pass cv_image to Jenga4D Predictor
 
         # TODO : Uncommment
-        bnp = self.predictor.predict_4dpos(cv_image,'filecode_%d'%self.filecode)
+        bnp = self.predictor.predict_4dpos(cv_image,'filecode_%d'%self.filecode, (layer, row))
         print('done')
 
         # Fill the block_pose_list
@@ -307,7 +307,10 @@ class Vision:
             # blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*11, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
         else:
             zaxis = (0, 0, 1)
+            #TODO: Remove print
+            print('bnp.shape', bnp.shape)
             for ind in range(bnp.shape[0]):
+
                 theta = bnp[ind,3]+np.pi/2.
                 # the following 3 lines are for geting the orientation as jenga_tf
                 epsilon = np.pi/8
@@ -316,6 +319,8 @@ class Vision:
                 q = [np.cos(theta/2.), 0., 0., 1.0*np.sin(theta/2.)]
                 pose_dict = {'x': bnp[ind, 0]/100.,  'y': bnp[ind, 1]/100., 'z':bnp[ind, 2]/100., 'qw': q[0], 'qx': q[1], 'qy': q[2], 'qz': q[3]}
                 blocks_pose_list.append(pose_dict)
+        #TODO: Remove print
+        print(len(blocks_pose_list))
 
         # write the output to a file
         str_test =  "[VISION] -  ... {}".format(blocks_pose_list[0]['z'])
@@ -324,6 +329,8 @@ class Vision:
 
         # Pack the values observed into a BlocksPose msg
         bp = self.pack_blocks(blocks_pose_list)
+
+        print(bp)
 
         # Return the service result
         return bp
