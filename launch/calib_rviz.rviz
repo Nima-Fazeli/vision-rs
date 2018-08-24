@@ -6,9 +6,9 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /PointCloud21
         - /InteractiveMarkers1
-        - /InteractiveMarkers1/Status1
+        - /TF1
+        - /TF1/Frames1
       Splitter Ratio: 0.5
     Tree Height: 775
   - Class: rviz/Selection
@@ -76,7 +76,7 @@ Visualization Manager:
       Size (Pixels): 2
       Size (m): 0.00999999978
       Style: Points
-      Topic: /camera/depth_registered/points
+      Topic: /camera_april/depth_registered/points
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -90,11 +90,48 @@ Visualization Manager:
       Show Visual Aids: false
       Update Topic: /simple_marker/update
       Value: true
+    - Class: rviz/TF
+      Enabled: true
+      Frame Timeout: 15
+      Frames:
+        All Enabled: false
+        april_aligned_depth_to_color_frame:
+          Value: false
+        april_camera_color_frame:
+          Value: false
+        april_camera_color_optical_frame:
+          Value: false
+        april_camera_depth_frame:
+          Value: false
+        april_camera_depth_optical_frame:
+          Value: false
+        april_camera_link:
+          Value: true
+        jenga_tf:
+          Value: true
+      Marker Scale: 1
+      Name: TF
+      Show Arrows: false
+      Show Axes: true
+      Show Names: true
+      Tree:
+        jenga_tf:
+          april_camera_link:
+            april_aligned_depth_to_color_frame:
+              april_camera_color_optical_frame:
+                {}
+            april_camera_color_frame:
+              {}
+            april_camera_depth_frame:
+              april_camera_depth_optical_frame:
+                {}
+      Update Interval: 0
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: camera_link
+    Fixed Frame: april_camera_link
     Frame Rate: 30
   Name: root
   Tools:
@@ -115,7 +152,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1.40310121
+      Distance: 3.21933627
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
@@ -130,10 +167,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.130398318
+      Pitch: 0.300398111
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.37044954
+      Yaw: 2.44045997
     Saved: ~
 Window Geometry:
   Displays:

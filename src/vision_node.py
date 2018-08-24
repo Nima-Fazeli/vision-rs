@@ -10,11 +10,11 @@ then run catkin_make
 """
 
 import sys, time, os
-
+import matplotlib.pyplot as plt
 from PIL import Image as imm
 
 sys.path.insert(0, '/home/robot2/anaconda3/envs/python-3.5/lib/python3.5/site-packages')
-
+root =  os.path.dirname(os.path.abspath(__file__)).split('/mo_jenga')[0]
 from Jenga4D.predict_4dpos import Jenga4Dpos
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'Jenga4D'))
@@ -56,6 +56,37 @@ class Vision:
         self.filecode = -1  # Last filecode recieved
         self.image_count = 0
 
+        self.predictions = []
+
+    def restart_pred(self):
+        self.predictions = []
+
+    def plot_pred(self):
+        if len(self.predictions) != 0:
+            print('plotting')
+            self.predictions = np.array(self.predictions)
+            axis_list = ['y','x','theta']
+            axis_index = [1,0,3]
+            axis_dim = [10., 10., 180./np.pi]
+            for a, ax_name in enumerate(axis_list):
+                print('plotting %s'%(a))
+                plt.figure(ax_name)
+                data_to_plot = self.predictions[:,:,axis_index[a]]*axis_dim[a]
+                for i in range(9):
+                    plt.plot(data_to_plot[:,i], 'go', label='ranked %d'%i)
+
+                plt.plot(data_to_plot[:,9], 'ro', label='best one')
+                mean_v =np.mean(data_to_plot, axis=1)
+                std_v = np.std(data_to_plot, axis=1)
+                plt.errorbar( np.arange(self.predictions.shape[0]), mean_v, std_v)
+                plt.title('Evolution %s'%ax_name)
+                # plt.legend()
+                figure_name = 'fc_%d_%s_evolution.png'%(self.filecode, ax_name)
+                path = os.path.join('/home','robot2' ,'mo_jenga','data','vision_plots','best_evolution')
+                plt.savefig(os.path.join(path, figure_name))
+                print('saved')
+        else:
+            pass
 
 
     def pack_blocks(self, blocks_list):
@@ -87,39 +118,39 @@ class Vision:
             while True:
                 try:
                     ros_data = rospy.wait_for_message(camera_message, CompressedImage)
-                    print('message received')
+                    # print('message received')
                     rospy.loginfo('message received')
                     break
                 except:
                     print('waiting for message')
 
             np_arr = np.fromstring(ros_data.data, np.uint8)
-            print(np_arr.shape)
+            # print(np_arr.shape)
             image_np = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
         else:
             camera_message = '/camera/aligned_depth_to_color/image_raw' #'/camera/depth/image_rect_raw/compressed'
 
             #~ camera_message = '/camera/aligned_depth_to_color/image_raw/compressed' #'/camera/depth/image_rect_raw/compressed'
-            print('going for depth')
+            # print('going for depth')
             while True:
                 try:
                     ros_data = rospy.wait_for_message(camera_message, Image)
                     #~ ros_data = rospy.wait_for_message(camera_message, CompressedImage)
-                    print('message received')
+                    # print('message received')
                     rospy.loginfo('message received')
                     break
                 except:
-                    print('waiting for message')
+                    print('waiting for depth message')
             #~ mg = self.compress_to_cv2(ros_data, '16UC1')
             #~ return mg
             if True:
                 h = ros_data.height
                 w = ros_data.width
                 step = ros_data.step
-                print('size (h,w,s): (%d, %d, %d)' % (h,w, step))
+                # print('size (h,w,s): (%d, %d, %d)' % (h,w, step))
                 encoding = ros_data.encoding
-                print('encoding: %s'%encoding)
+                # print('encoding: %s'%encoding)
 
                 np_arr = ros_data.data#np.fromstring(ros_data.data, np.uint8)
                 arrr = np.full((h,w), 0.0)
@@ -134,18 +165,18 @@ class Vision:
                         #~ arrr[i,j] = (np_arr[i*w*2+j*2]+256.0*np_arr[i*w*2+j*2+1])#/(2**8-1)
                         #~ arrr[i,j] = (np_arr[i*w*2+j]+256*np_arr[i*w*2+j])#/(2**8-1)
                 #~ pdb.set_trace()
-                print('max: %.4f'%arrr.max())
-                print('max: %.4f'%np.amax(arrr))
+                # print('max: %.4f'%arrr.max())
+                # print('max: %.4f'%np.amax(arrr))
 
                 cv2.normalize(arrr,arrr, 0, 1, cv2.NORM_MINMAX)
 
                 arrr_norm = 255*arrr #*(2**8-1)/arrr.max()#(2**16-1.0)
 
                 #print(np_arr.shape)
-                print(arrr.shape)
+                # print(arrr.shape)
 
                 image_np = arrr_norm#.astype(np.int8)#cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-                print(image_np)
+                # print(image_np)
 
             else:
                 dtype = np.dtype(np.int16)
@@ -175,9 +206,9 @@ class Vision:
         h = ros_data.height
         w = ros_data.width
         step = ros_data.step
-        print('size (h,w,s): (%d, %d, %d)' % (h,w, step))
+        # print('size (h,w,s): (%d, %d, %d)' % (h,w, step))
         encoding = ros_data.encoding
-        print('encoding: %s'%encoding)
+        # print('encoding: %s'%encoding)
 
         np_arr = ros_data.data#np.fromstring(ros_data.data, np.uint8)
 
@@ -203,19 +234,17 @@ class Vision:
 
 
     def save_image(self,img, depth=False):
-        print('Saving image')
+        # print('Saving image')
         cd = {True:'depth',False:'color'}
         c = cd[depth]
-        print('ok')
         filename = '%s_fc_%d_%d.png'%(c, self.filecode, self.image_count)
-        print('ok')
         path = os.path.join(root,'mo_jenga', 'data', 'imgs', c, 'filecode_%d'%self.filecode)
-        print('path creating')
-        print(path)
+        # print('path creating')
+        # print(path)
         if not os.path.exists(path):
             print ('Creating directory: %s'%path)
             os.makedirs(path)
-        print('path created')
+            print('path created')
         file_path = os.path.join(path, filename)
         rospy.loginfo('ready to save')
         cv2.imwrite(file_path, img)
@@ -226,12 +255,12 @@ class Vision:
         # Save
         filename = '%s_fc_%d_%d.tif'%('raw_depth', self.filecode, self.image_count)
         path = os.path.join(root,'mo_jenga', 'data', 'imgs', 'raw_depth', 'filecode_%d'%self.filecode)
-        print('path creating')
-        print(path)
+        # print('path creating')
+        # print(path)
         if not os.path.exists(path):
             print ('Creating directory: %s'%path)
             os.makedirs(path)
-        print('path created')
+            print('path created')
         file_path = os.path.join(path, filename)
         imaged.save(file_path)
 
@@ -248,15 +277,19 @@ class Vision:
         rospy.loginfo('Filecode received: %d'%filecode)
         rospy.loginfo('Previous filecode: %d'%self.filecode)
         if filecode != self.filecode:
+            self.plot_pred()
+
             self.filecode = filecode
             self.image_count = 0
+
+            self.restart_pred()
         else:
             self.image_count += 1
 
 
         blocks_pose_list = []
         cv_image = self.get_image()
-        print('we have image')
+        # print('we have image')
 
         # Save the image to process later
         self.save_image(cv_image) # Color
@@ -268,8 +301,17 @@ class Vision:
         # pass cv_image to Jenga4D Predictor
 
         # TODO : Uncommment
-        bnp = self.predictor.predict_4dpos(cv_image,'filecode_%d'%self.filecode, (layer, row))
-        print('done')
+        num_times = 1
+        bnp_raw = []
+        # Average Loop
+        for i in range(num_times):
+            cv_image = self.get_image()
+            block_pred, top50_gt_with_scores = self.predictor.predict_4dpos(cv_image,'filecode_%d'%self.filecode, (layer, row))
+            self.predictions.append(top50_gt_with_scores[-10:,:5])
+            bnp_raw.append(block_pred[np.newaxis, :])
+        elements, counts = np.unique(np.array(bnp_raw), axis=0, return_counts=True)
+        bnp = elements[np.argmax(counts)]
+        # print('done')
 
         # Fill the block_pose_list
         blocks_pose_list = []
@@ -286,29 +328,11 @@ class Vision:
                     blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z':0.0143*i, 'qw': 1.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0})
                     blocks_pose_list.append({'x': 0.0, 'y': 0.026, 'z':0.0143*i, 'qw': 1.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0})
                     blocks_pose_list.append({'x': 0.0, 'y': -0.026, 'z':0.0143*i, 'qw': 1.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0})
-            # even layers
-            # blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*1, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-            # blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*1, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-            # blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*1, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-            # blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*3, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-            # blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*3, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-            # blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*3, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-            # blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*5, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-            # blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*5, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-            # blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*5, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-            # blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*7, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-            # blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*7, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-            # blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*7, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-            # blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*9, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-            # blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*9, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-            # blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*9, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-            # blocks_pose_list.append({'x': 0.026, 'y': 0.0, 'z': 0.0143*11, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-            # blocks_pose_list.append({'x': 0.0, 'y': 0.0, 'z': 0.0143*11, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
-            # blocks_pose_list.append({'x': -0.026, 'y': 0.0, 'z': 0.0143*11, 'qw': 0.707, 'qx':0.0, 'qy': 0.0, 'qz': 0.707})
+
         else:
             zaxis = (0, 0, 1)
             #TODO: Remove print
-            print('bnp.shape', bnp.shape)
+            # print('bnp.shape', bnp.shape)
             for ind in range(bnp.shape[0]):
 
                 theta = bnp[ind,3]+np.pi/2.
@@ -316,11 +340,14 @@ class Vision:
                 epsilon = np.pi/8
                 if np.pi-epsilon < theta < np.pi+epsilon:
                     theta -= np.pi
+                print('x, y: ', (bnp[ind, 0]/100., bnp[ind, 1]/100.))
+                print('Theta: ',np.degrees(theta))
+
                 q = [np.cos(theta/2.), 0., 0., 1.0*np.sin(theta/2.)]
                 pose_dict = {'x': bnp[ind, 0]/100.,  'y': bnp[ind, 1]/100., 'z':bnp[ind, 2]/100., 'qw': q[0], 'qx': q[1], 'qy': q[2], 'qz': q[3]}
                 blocks_pose_list.append(pose_dict)
         #TODO: Remove print
-        print(len(blocks_pose_list))
+        # print(len(blocks_pose_list))
 
         # write the output to a file
         str_test =  "[VISION] -  ... {}".format(blocks_pose_list[0]['z'])
@@ -330,7 +357,7 @@ class Vision:
         # Pack the values observed into a BlocksPose msg
         bp = self.pack_blocks(blocks_pose_list)
 
-        print(bp)
+        #print(bp)
 
         # Return the service result
         return bp

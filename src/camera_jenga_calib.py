@@ -16,9 +16,9 @@ import rospy
 from interactive_markers.interactive_marker_server import *
 from visualization_msgs.msg import *
 
-WIDTH  = 25./1000.*3
-HEIGHT = 14./1000.*20
-DEPTH  = 75./1000. 
+WIDTH  = 25./1000.
+HEIGHT = 14./1000.
+DEPTH  = 75./1000.
 
 
 def framePublisher( msg ):
@@ -26,18 +26,18 @@ def framePublisher( msg ):
     q = msg.pose.orientation
     s = 'Pose" ' + str(p.x) + ' '+ str(p.y) + ' '+ str(p.z) + ' '
     s = s + str(q.x) + ' ' + str(q.y) + ' ' + str(q.z) + ' ' + str(q.w)
-    
+
     print(s)
 
 if __name__=="__main__":
     rospy.init_node("calibration_marker")
-    
+
     # create an interactive marker server on the topic namespace simple_marker
     server = InteractiveMarkerServer("simple_marker")
-    
+
     # create an interactive marker for our server
     int_marker = InteractiveMarker()
-    int_marker.header.frame_id = "camera_link"
+    int_marker.header.frame_id = "back_camera_link"
     int_marker.name = "my_marker"
     int_marker.description = "7 layers of the block"
 
@@ -59,7 +59,7 @@ if __name__=="__main__":
 
     # add the control to the interactive marker
     int_marker.controls.append( box_control )
-    
+
     # create a control which will move the box
     control = InteractiveMarkerControl()
     control.name = "move_x"
@@ -69,7 +69,7 @@ if __name__=="__main__":
     control.orientation.z = 0
     control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
     int_marker.controls.append(control);
-    
+
     control = InteractiveMarkerControl()
     control.name = "rotate_x"
     control.orientation.w = 1
@@ -78,7 +78,7 @@ if __name__=="__main__":
     control.orientation.z = 0
     control.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
     int_marker.controls.append(control);
-    
+
     control = InteractiveMarkerControl()
     control.name = "move_y"
     control.orientation.w = 1
@@ -87,7 +87,7 @@ if __name__=="__main__":
     control.orientation.z = 0
     control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
     int_marker.controls.append(control);
-    
+
     control = InteractiveMarkerControl()
     control.name = "rotate_y"
     control.orientation.w = 1
@@ -96,7 +96,7 @@ if __name__=="__main__":
     control.orientation.z = 0
     control.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
     int_marker.controls.append(control);
-    
+
     control = InteractiveMarkerControl()
     control.name = "move_z"
     control.orientation.w = 1
@@ -105,7 +105,7 @@ if __name__=="__main__":
     control.orientation.z = 1
     control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
     int_marker.controls.append(control);
-    
+
     control = InteractiveMarkerControl()
     control.name = "rotate_z"
     control.orientation.w = 1
@@ -114,7 +114,7 @@ if __name__=="__main__":
     control.orientation.z = 1
     control.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
     int_marker.controls.append(control);
-    
+
     # add the interactive marker to our collection &
     # tell the server to call processFeedback() when feedback arrives for it
     server.insert(int_marker, framePublisher)

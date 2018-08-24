@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- inverse transform: rosrun tf tf_echo /jenga_tf /camera_link -->
+    <!-- This is the original hand calibrated with the markers transform -->
+<!--
+    <node name="back_frame"  pkg="tf" type="static_transform_publisher" args="-0.398 -0.374 0.226 -0.0243874751031 0.120389521122 0.330623030663 0.935735225677 /jenga_tf /back_camera_link 100"/>
+-->
+    <node name="back_frame"  pkg="tf" type="static_transform_publisher" args="-0.395 -0.395 0.216 -0.033 0.104 0.350 0.930 /jenga_tf /back_camera_link 100"/>
+</launch>
