@@ -265,7 +265,14 @@ class Vision:
         imaged.save(file_path)
 
 
+
+
+
+
+
     # SERVICE CALLBACK:****************************************************************************************
+
+
     def handle_vision_service(self, args):
         # service handle for the vision
 
@@ -306,7 +313,16 @@ class Vision:
         # Average Loop
         for i in range(num_times):
             cv_image = self.get_image()
-            block_pred, top50_gt_with_scores = self.predictor.predict_4dpos(cv_image,'filecode_%d'%self.filecode, (layer, row))
+            block_pred, top50_gt_with_scores, mask_fail = self.predictor.predict_4dpos(cv_image,'filecode_%d'%self.filecode, (layer, row), self.image_count)
+            median_v = np.median(top50_gt_with_scores[-5:], axis=0)
+            mean_v = np.mean(top50_gt_with_scores[-5:], axis=0)
+            print('\nMEDIANS: ', median_v[:2], np.degrees(median_v[3]))
+            print('\nMEANS: ', mean_v[:2], np.degrees(mean_v[3]))
+            print('')
+            if mask_fail:
+                print('\n\n @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ \n')
+                print('\t MASK FAILED =====================')
+                print('\n @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ \n\n')
             self.predictions.append(top50_gt_with_scores[-10:,:5])
             bnp_raw.append(block_pred[np.newaxis, :])
         elements, counts = np.unique(np.array(bnp_raw), axis=0, return_counts=True)
@@ -330,22 +346,37 @@ class Vision:
                     blocks_pose_list.append({'x': 0.0, 'y': -0.026, 'z':0.0143*i, 'qw': 1.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0})
 
         else:
+            MEAN_RES = True
             zaxis = (0, 0, 1)
             #TODO: Remove print
             # print('bnp.shape', bnp.shape)
-            for ind in range(bnp.shape[0]):
-
-                theta = bnp[ind,3]+np.pi/2.
+            if MEAN_RES and row != 2:
+                theta = mean_v[3]+np.pi/2.
                 # the following 3 lines are for geting the orientation as jenga_tf
                 epsilon = np.pi/8
-                if np.pi-epsilon < theta < np.pi+epsilon:
+                if layer%2 == 1:
                     theta -= np.pi
-                print('x, y: ', (bnp[ind, 0]/100., bnp[ind, 1]/100.))
+                print('x, y: ', (mean_v[0]/100., mean_v[1]/100.))
                 print('Theta: ',np.degrees(theta))
 
                 q = [np.cos(theta/2.), 0., 0., 1.0*np.sin(theta/2.)]
-                pose_dict = {'x': bnp[ind, 0]/100.,  'y': bnp[ind, 1]/100., 'z':bnp[ind, 2]/100., 'qw': q[0], 'qx': q[1], 'qy': q[2], 'qz': q[3]}
+                pose_dict = {'x': mean_v[0]/100.,  'y': mean_v[1]/100., 'z':mean_v[2]/100., 'qw': q[0], 'qx': q[1], 'qy': q[2], 'qz': q[3]}
                 blocks_pose_list.append(pose_dict)
+
+            else:
+                for ind in range(bnp.shape[0]):
+
+                    theta = bnp[ind,3]+np.pi/2.
+                    # the following 3 lines are for geting the orientation as jenga_tf
+                    epsilon = np.pi/8
+                    if layer%2 == 1:
+                        theta -= np.pi
+                    print('x, y: ', (bnp[ind, 0]/100., bnp[ind, 1]/100.))
+                    print('Theta: ',np.degrees(theta))
+
+                    q = [np.cos(theta/2.), 0., 0., 1.0*np.sin(theta/2.)]
+                    pose_dict = {'x': bnp[ind, 0]/100.,  'y': bnp[ind, 1]/100., 'z':bnp[ind, 2]/100., 'qw': q[0], 'qx': q[1], 'qy': q[2], 'qz': q[3]}
+                    blocks_pose_list.append(pose_dict)
         #TODO: Remove print
         # print(len(blocks_pose_list))
 

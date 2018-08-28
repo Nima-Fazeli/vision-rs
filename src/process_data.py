@@ -40,7 +40,7 @@ class ImageDataParser():
         color_img = self.dm.getColorImage(filecode, index)
 
         # Call Jenga4D
-        bnp, top50_gt_with_scores = self.predictor.predict_4dpos(color_img,'filecode_%d'%filecode, (layer,row)) # This return a np array (4,)
+        bnp, top50_gt_with_scores, mask_fail = self.predictor.predict_4dpos(color_img,'filecode_%d'%filecode, (layer,row)) # This return a np array (4,)
 
         #bnp = block_pred[np.newaxis, :]
         # Process Jenga4D output
@@ -71,7 +71,7 @@ class ImageDataParser():
             bd = y
             phi = theta - np.pi/2
 
-        return (bw, bd, phi), top50_gt_with_scores[-10:,:5]
+        return (bw, bd, phi), top50_gt_with_scores[-10:,:5], mask_fail
 
 
 
@@ -83,7 +83,7 @@ class ImageDataParser():
         start_t = time.time()
         for indx in range(num_indxs):
             print('______________________________')
-            (bw, bd, phi), top10 = self.parseFilcodeIndex(filecode, indx)
+            (bw, bd, phi), top10, mask_fail = self.parseFilcodeIndex(filecode, indx)
             print('%d/%d Completed  ~~~ %s'%(indx+1, num_indxs, timeSince(start_t, float(indx+1)/num_indxs)))
             predictions.append(top10)
 
@@ -139,7 +139,7 @@ class ImageDataParser():
         layer = parameters['layer']
 
         # Result container:
-        results = {'B_w':[], 'B_d':[], 'phi':[]}
+        results = {'B_w':[], 'B_d':[], 'phi':[], 'Mask_Fail':[]}
 
         # Result container:
         predictions = []
@@ -147,7 +147,7 @@ class ImageDataParser():
 
         for indx in range(num_indxs):
             print('____________________________________________________')
-            _, top_10 = self.parseFilcodeIndex(filecode, indx)
+            _, top_10, mask_fail = self.parseFilcodeIndex(filecode, indx)
             print('top10 shape: ',top_10.shape)
             print(top_10)
             print('%d/%d Completed  ~~~ %s'%(indx+1, num_indxs, timeSince(start_t, float(indx+1)/num_indxs)))
@@ -171,6 +171,7 @@ class ImageDataParser():
                 phi = theta #- np.pi/2
 
             print(bw, bd, phi)
+            results['Mask_Fail'].append(mask_fail)
             if indx>0 and abs(bd-results['B_d'][-1])>0.009:
                 print('Keeping the same values as the last one')
                 results['B_w'].append(results['B_w'][-1])
@@ -264,4 +265,5 @@ if __name__ == '__main__':
     #     #idp.plotPred(fc)
     #     idp.parseFilecodeAndPlot(fc)
     # idp.parseAll()
-    idp.parseResult('0')
+    idp.parseResult('2')
+    idp.parseResult('3')
